@@ -3018,7 +3018,6 @@ static int msm8952_asoc_machine_probe(struct platform_device *pdev)
 	const char *wsa = "asoc-wsa-codec-names";
 	const char *type = NULL;
 	const char *ext_pa_str = NULL;
-	const char *spk_ext_pa = "qcom,msm-spk-ext-pa";
 	int num_strings;
 	int id, i, val;
 	int ret = 0;
@@ -3211,14 +3210,14 @@ parse_mclk_freq:
 	}
 	pr_debug("%s: ext_pa = %d\n", __func__, pdata->ext_pa);
 	pdata->spk_ext_pa_gpio = of_get_named_gpio(pdev->dev.of_node,
-							spk_ext_pa, 0);
+							"qcom,msm-spk-ext-pa", 0);
 	if (pdata->spk_ext_pa_gpio < 0) {
-		dev_err(&pdev->dev, "%s: missing %s in dt node\n",
-			__func__, spk_ext_pa);
+		dev_err(&pdev->dev, "%s: missing qcom,msm-spk-ext-pa in dt node\n",
+			__func__);
 	}
 
 	pdata->spk_ext_pa_gpio_p = of_parse_phandle(pdev->dev.of_node,
-							spk_ext_pa, 0);
+							"qcom,msm-spk-ext-pa-pinctrl", 0);
 
 	ret = is_us_eu_switch_gpio_support(pdev, pdata);
 	if (ret < 0) {
