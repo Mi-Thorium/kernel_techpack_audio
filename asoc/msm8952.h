@@ -61,7 +61,6 @@ struct msm_asoc_mach_data {
 	int codec_type;
 	int ext_pa;
 	int us_euro_gpio;
-	int hp_ext_pa_gpio;
 	int spk_ext_pa_gpio;
 	int mclk_freq;
 	bool native_clk_set;
