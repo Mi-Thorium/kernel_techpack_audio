@@ -338,6 +338,24 @@ static bool msm_anlg_cdc_adj_ref_current(struct snd_soc_codec *codec,
 	return true;
 }
 
+void msm_anlg_cdc_hp_ext_pa_cb(
+		int (*codec_hp_ext_pa)(struct snd_soc_codec *codec,
+			int enable), struct snd_soc_codec *codec)
+{
+	struct sdm660_cdc_priv *sdm660_cdc;
+
+	if (!codec) {
+		pr_err("%s: NULL codec pointer!\n", __func__);
+		return;
+	}
+
+	sdm660_cdc = snd_soc_codec_get_drvdata(codec);
+
+	dev_dbg(codec->dev, "%s: Enter\n", __func__);
+	sdm660_cdc->codec_hp_ext_pa_cb = codec_hp_ext_pa;
+}
+EXPORT_SYMBOL(msm_anlg_cdc_hp_ext_pa_cb);
+
 void msm_anlg_cdc_spk_ext_pa_cb(
 		int (*codec_spk_ext_pa)(struct snd_soc_codec *codec,
 			int enable), struct snd_soc_codec *codec)
@@ -2020,6 +2038,10 @@ static const char * const adc2_mux_text[] = {
 	"ZERO", "INP2", "INP3"
 };
 
+static const char * const ext_hp_text[] = {
+	"Off", "On"
+};
+
 static const char * const ext_spk_text[] = {
 	"Off", "On"
 };
@@ -2036,11 +2058,18 @@ static const struct soc_enum ext_spk_enum =
 	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0,
 		ARRAY_SIZE(ext_spk_text), ext_spk_text);
 
+static const struct soc_enum ext_hp_enum =
+	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0,
+		ARRAY_SIZE(ext_hp_text), ext_hp_text);
+
 static const struct soc_enum wsa_spk_enum =
 	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0,
 		ARRAY_SIZE(wsa_spk_text), wsa_spk_text);
 
 
+
+static const struct snd_kcontrol_new ext_hp_mux =
+	SOC_DAPM_ENUM("Ext HP Switch Mux", ext_hp_enum);
 
 static const struct snd_kcontrol_new ext_spk_mux =
 	SOC_DAPM_ENUM("Ext Spk Switch Mux", ext_spk_enum);
@@ -3028,6 +3057,10 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"HEADPHONE", NULL, "HPHL PA"},
 	{"HEADPHONE", NULL, "HPHR PA"},
 
+	{"Ext HP", NULL, "Ext HP Switch"},
+	{"Ext HP Switch", "On", "HPHL PA"},
+	{"Ext HP Switch", "On", "HPHR PA"},
+
 	{"HPHL PA", NULL, "HPHL"},
 	{"HPHR PA", NULL, "HPHR"},
 	{"HPHL", "Switch", "HPHL DAC"},
@@ -3259,6 +3292,32 @@ static int msm_anlg_cdc_codec_enable_lo_pa(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+static int msm_anlg_cdc_codec_enable_hp_ext_pa(struct snd_soc_dapm_widget *w,
+						struct snd_kcontrol *kcontrol,
+						int event)
+{
+	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
+	struct sdm660_cdc_priv *sdm660_cdc =
+					snd_soc_codec_get_drvdata(codec);
+
+	dev_dbg(codec->dev, "%s: %s event = %d\n", __func__, w->name, event);
+	switch (event) {
+	case SND_SOC_DAPM_POST_PMU:
+		dev_dbg(codec->dev,
+			"%s: enable external headphone PA\n", __func__);
+		if (sdm660_cdc->codec_hp_ext_pa_cb)
+			sdm660_cdc->codec_hp_ext_pa_cb(codec, 1);
+		break;
+	case SND_SOC_DAPM_PRE_PMD:
+		dev_dbg(codec->dev,
+			"%s: enable external headphone PA\n", __func__);
+		if (sdm660_cdc->codec_hp_ext_pa_cb)
+			sdm660_cdc->codec_hp_ext_pa_cb(codec, 0);
+		break;
+	}
+	return 0;
+}
+
 static int msm_anlg_cdc_codec_enable_spk_ext_pa(struct snd_soc_dapm_widget *w,
 						struct snd_kcontrol *kcontrol,
 						int event)
@@ -3389,6 +3448,7 @@ static const struct snd_soc_dapm_widget msm_anlg_cdc_dapm_widgets[] = {
 	SND_SOC_DAPM_MUX("HPHR", SND_SOC_NOPM, 0, 0, hphr_mux),
 	SND_SOC_DAPM_MUX("RDAC2 MUX", SND_SOC_NOPM, 0, 0, &rdac2_mux),
 	SND_SOC_DAPM_MUX("WSA Spk Switch", SND_SOC_NOPM, 0, 0, wsa_spk_mux),
+	SND_SOC_DAPM_MUX("Ext HP Switch", SND_SOC_NOPM, 0, 0, &ext_hp_mux),
 	SND_SOC_DAPM_MUX("Ext Spk Switch", SND_SOC_NOPM, 0, 0, &ext_spk_mux),
 	SND_SOC_DAPM_MUX("LINE_OUT", SND_SOC_NOPM, 0, 0, lo_mux),
 	SND_SOC_DAPM_MUX("ADC2 MUX", SND_SOC_NOPM, 0, 0, &tx_adc2_mux),
@@ -3413,6 +3473,7 @@ static const struct snd_soc_dapm_widget msm_anlg_cdc_dapm_widgets[] = {
 		SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMU |
 		SND_SOC_DAPM_POST_PMD),
 
+	SND_SOC_DAPM_HP("Ext HP", msm_anlg_cdc_codec_enable_hp_ext_pa),
 	SND_SOC_DAPM_SPK("Ext Spk", msm_anlg_cdc_codec_enable_spk_ext_pa),
 
 	SND_SOC_DAPM_SWITCH("ADC1_INP1", SND_SOC_NOPM, 0, 0,

@@ -307,6 +307,66 @@ done:
 	return ret;
 }
 
+int is_ext_hp_gpio_support(struct platform_device *pdev,
+			struct msm_asoc_mach_data *pdata)
+{
+	const char *hp_ext_pa = "qcom,msm-hp-ext-pa";
+
+	pr_debug("%s:Enter\n", __func__);
+
+	pdata->hp_ext_pa_gpio = of_get_named_gpio(pdev->dev.of_node,
+				hp_ext_pa, 0);
+
+	if (pdata->hp_ext_pa_gpio < 0) {
+		dev_err(&pdev->dev,
+			"%s: missing %s in dt node\n", __func__, hp_ext_pa);
+	} else {
+		if (!gpio_is_valid(pdata->hp_ext_pa_gpio)) {
+			pr_err("%s: Invalid external headphone gpio: %d",
+				__func__, pdata->hp_ext_pa_gpio);
+			return -EINVAL;
+		}
+	}
+	return 0;
+}
+
+static int enable_hp_ext_pa(struct snd_soc_codec *codec, int enable)
+{
+	struct snd_soc_card *card = codec->component.card;
+	struct msm_asoc_mach_data *pdata = snd_soc_card_get_drvdata(card);
+	int ret;
+
+	if (!gpio_is_valid(pdata->hp_ext_pa_gpio)) {
+		pr_err("%s: Invalid gpio: %d\n", __func__,
+			pdata->hp_ext_pa_gpio);
+		return false;
+	}
+
+	pr_debug("%s: %s external headphone PA\n", __func__,
+		enable ? "Enable" : "Disable");
+
+	if (enable) {
+		ret =  msm_cdc_pinctrl_select_active_state(
+					pdata->hp_ext_pa_gpio_p);
+		if (ret) {
+			pr_err("%s: gpio set cannot be de-activated %s\n",
+					__func__, "ext_hp_gpio");
+			return ret;
+		}
+		gpio_set_value_cansleep(pdata->hp_ext_pa_gpio, enable);
+	} else {
+		gpio_set_value_cansleep(pdata->hp_ext_pa_gpio, enable);
+		ret = msm_cdc_pinctrl_select_sleep_state(
+				pdata->hp_ext_pa_gpio_p);
+		if (ret) {
+			pr_err("%s: gpio set cannot be de-activated %s\n",
+					__func__, "ext_hp_gpio");
+			return ret;
+		}
+	}
+	return 0;
+}
+
 int is_ext_spk_gpio_support(struct platform_device *pdev,
 			struct msm_asoc_mach_data *pdata)
 {
@@ -1588,6 +1648,7 @@ static int msm_audrx_init(struct snd_soc_pcm_runtime *rtd)
 
 	snd_soc_dapm_sync(dapm);
 
+	msm_anlg_cdc_hp_ext_pa_cb(enable_hp_ext_pa, ana_cdc);
 	msm_anlg_cdc_spk_ext_pa_cb(enable_spk_ext_pa, ana_cdc);
 	msm_dig_cdc_hph_comp_cb(config_hph_compander_gpio, dig_cdc);
 
@@ -3209,13 +3270,22 @@ parse_mclk_freq:
 			pdata->ext_pa = (pdata->ext_pa | QUIN_MI2S_ID);
 	}
 	pr_debug("%s: ext_pa = %d\n", __func__, pdata->ext_pa);
+
+	pdata->hp_ext_pa_gpio = of_get_named_gpio(pdev->dev.of_node,
+							"qcom,msm-hp-ext-pa", 0);
+	if (pdata->hp_ext_pa_gpio < 0) {
+		dev_err(&pdev->dev, "%s: missing qcom,msm-hp-ext-pa in dt node\n",
+			__func__);
+	}
+	pdata->hp_ext_pa_gpio_p = of_parse_phandle(pdev->dev.of_node,
+							"qcom,msm-hp-ext-pa-pinctrl", 0);
+
 	pdata->spk_ext_pa_gpio = of_get_named_gpio(pdev->dev.of_node,
 							"qcom,msm-spk-ext-pa", 0);
 	if (pdata->spk_ext_pa_gpio < 0) {
 		dev_err(&pdev->dev, "%s: missing qcom,msm-spk-ext-pa in dt node\n",
 			__func__);
 	}
-
 	pdata->spk_ext_pa_gpio_p = of_parse_phandle(pdev->dev.of_node,
 							"qcom,msm-spk-ext-pa-pinctrl", 0);
 
@@ -3226,6 +3296,10 @@ parse_mclk_freq:
 		goto err;
 	}
 
+	ret = is_ext_hp_gpio_support(pdev, pdata);
+	if (ret < 0)
+		pr_err("%s:  doesn't support external headphone pa\n",
+				__func__);
 	ret = is_ext_spk_gpio_support(pdev, pdata);
 	if (ret < 0)
 		pr_err("%s:  doesn't support external speaker pa\n",
