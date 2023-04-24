@@ -3057,9 +3057,9 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"HEADPHONE", NULL, "HPHL PA"},
 	{"HEADPHONE", NULL, "HPHR PA"},
 
-	{"Ext HP", NULL, "Ext HP Switch"},
-	{"Ext HP Switch", "On", "HPHL PA"},
-	{"Ext HP Switch", "On", "HPHR PA"},
+	{"Ext Spk", NULL, "Ext Spk Switch"},
+	{"Ext Spk Switch", "On", "HPHL PA"},
+	{"Ext Spk Switch", "On", "HPHR PA"},
 
 	{"HPHL PA", NULL, "HPHL"},
 	{"HPHR PA", NULL, "HPHR"},
@@ -3070,9 +3070,6 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"HPHR PA", NULL, "CP"},
 	{"HPHR PA", NULL, "RX_BIAS"},
 	{"HPHL DAC", NULL, "PDM_IN_RX1"},
-
-	{"Ext Spk", NULL, "Ext Spk Switch"},
-	{"Ext Spk Switch", "On", "SPK PA"},
 
 	{"SPK_OUT", NULL, "SPK PA"},
 	{"SPK PA", NULL, "SPK_RX_BIAS"},
