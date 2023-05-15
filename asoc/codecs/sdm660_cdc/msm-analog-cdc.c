@@ -2148,7 +2148,7 @@ static const struct soc_enum spk_pa_gpio_enum =
 	SOC_ENUM_SINGLE(SND_SOC_NOPM, 0,
 		ARRAY_SIZE(spk_pa_gpio_text), spk_pa_gpio_text);
 static const struct snd_kcontrol_new spk_pa_gpio_switch =
-	SOC_DAPM_ENUM("SPK PA GPIO Switch", spk_pa_gpio_enum);
+	SOC_DAPM_ENUM("Switch", spk_pa_gpio_enum);
 
 static void msm_anlg_cdc_codec_enable_adc_block(struct snd_soc_codec *codec,
 					 int enable)
@@ -3138,7 +3138,10 @@ static const struct snd_soc_dapm_route audio_map[] = {
 
 	/* Others */
 	{"HPH PA GPIO", NULL, "HPH PA GPIO Switch"},
-	{"SPK PA GPIO", NULL, "SPK PA GPIO Switch"},
+	{"SPK PA GPIO OUT", NULL, "SPK PA GPIO"},
+
+	// tmp
+	{"SPK PA GPIO", "Switch", "HPHR PA"},
 
 #if IS_ENABLED(CONFIG_SND_SOC_AW87319_MI8937)
 	{"MI8937 AW87319 PA SPK", NULL, "MI8937 AW87319 PA SPK Switch"},
@@ -3756,8 +3759,8 @@ static const struct snd_soc_dapm_widget msm_anlg_cdc_dapm_widgets[] = {
 
 	SND_SOC_DAPM_HP("HPH PA GPIO", msm_anlg_cdc_codec_enable_hph_pa_gpio),
 	SND_SOC_DAPM_OUT_DRV("HPH PA GPIO Switch", SND_SOC_NOPM, 0, 0, NULL, 0),
-	SND_SOC_DAPM_SPK("SPK PA GPIO", msm_anlg_cdc_codec_enable_spk_pa_gpio),
-	SND_SOC_DAPM_SWITCH("SPK PA GPIO Switch", SND_SOC_NOPM, 0, 0, &spk_pa_gpio_switch),
+	SND_SOC_DAPM_SPK("SPK PA GPIO OUT", msm_anlg_cdc_codec_enable_spk_pa_gpio),
+	SND_SOC_DAPM_SWITCH("SPK PA GPIO", SND_SOC_NOPM, 0, 0, &spk_pa_gpio_switch),
 
 #if IS_ENABLED(CONFIG_SND_SOC_AW87319_MI8937)
 	SND_SOC_DAPM_SPK("MI8937 AW87319 PA SPK", msm_anlg_cdc_codec_enable_mi8937_aw87319_pa_spk),
