@@ -2052,11 +2052,6 @@ static const char * const rdac2_mux_text[] = {
 static const struct snd_kcontrol_new adc1_switch =
 	SOC_DAPM_SINGLE("Switch", SND_SOC_NOPM, 0, 1, 0);
 
-static const struct snd_kcontrol_new hph_pa_gpio_switch =
-	SOC_DAPM_SINGLE("Switch", SND_SOC_NOPM, 0, 1, 0);
-static const struct snd_kcontrol_new spk_pa_gpio_switch =
-	SOC_DAPM_SINGLE("Switch", SND_SOC_NOPM, 0, 1, 0);
-
 #if IS_ENABLED(CONFIG_SND_SOC_AW87319_MI8937)
 static const struct snd_kcontrol_new mi8937_aw87319_pa_spk_switch =
 	SOC_DAPM_SINGLE("Switch", SND_SOC_NOPM, 0, 1, 0);
@@ -3769,9 +3764,9 @@ static const struct snd_soc_dapm_widget msm_anlg_cdc_dapm_widgets[] = {
 		0, SND_SOC_NOPM, 0, 0),
 
 	SND_SOC_DAPM_HP("HPH PA GPIO OUT", msm_anlg_cdc_codec_enable_hph_pa_gpio),
-	SND_SOC_DAPM_SWITCH("HPH PA GPIO", SND_SOC_NOPM, 0, 0, &hph_pa_gpio_switch),
+	SND_SOC_DAPM_OUT_DRV("HPH PA GPIO Switch", SND_SOC_NOPM, 0, 0, NULL, 0),
 	SND_SOC_DAPM_SPK("SPK PA GPIO OUT", msm_anlg_cdc_codec_enable_spk_pa_gpio),
-	SND_SOC_DAPM_SWITCH("SPK PA GPIO", SND_SOC_NOPM, 0, 0, &spk_pa_gpio_switch),
+	SND_SOC_DAPM_OUT_DRV("SPK PA GPIO Switch", SND_SOC_NOPM, 0, 0, NULL, 0),
 
 #if IS_ENABLED(CONFIG_SND_SOC_AW87319_MI8937)
 	SND_SOC_DAPM_SPK("MI8937 AW87319 PA SPK", msm_anlg_cdc_codec_enable_mi8937_aw87319_pa_spk),
