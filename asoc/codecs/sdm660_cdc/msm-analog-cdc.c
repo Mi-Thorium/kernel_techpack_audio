@@ -3151,8 +3151,8 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"MIC BIAS External2", NULL, "MICBIAS_REGULATOR"},
 
 	/* Others */
-	{"HPH PA GPIO", NULL, "HPH PA GPIO Switch"},
-	{"SPK PA GPIO", NULL, "SPK PA GPIO Switch"},
+	{"HPH PA GPIO OUT", NULL, "HPH PA GPIO"},
+	{"SPK PA GPIO OUT", NULL, "SPK PA GPIO"},
 
 #if IS_ENABLED(CONFIG_SND_SOC_AW87319_MI8937)
 	{"MI8937 AW87319 PA SPK", NULL, "MI8937 AW87319 PA SPK Switch"},
@@ -3388,7 +3388,7 @@ static int msm_anlg_cdc_codec_enable_hph_pa_gpio(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_PRE_PMD:
 		dev_dbg(codec->dev,
 			"%s: Disable HPH PA GPIO\n", __func__);
-		sdm660_cdc->codec_hph_pa_gpio_set_cb(codec, 1);
+		sdm660_cdc->codec_hph_pa_gpio_set_cb(codec, 0);
 		break;
 	}
 
@@ -3416,7 +3416,7 @@ static int msm_anlg_cdc_codec_enable_spk_pa_gpio(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_PRE_PMD:
 		dev_dbg(codec->dev,
 			"%s: Disable SPK PA GPIO\n", __func__);
-		sdm660_cdc->codec_spk_pa_gpio_set_cb(codec, 1);
+		sdm660_cdc->codec_spk_pa_gpio_set_cb(codec, 0);
 		break;
 	}
 
@@ -3768,9 +3768,9 @@ static const struct snd_soc_dapm_widget msm_anlg_cdc_dapm_widgets[] = {
 	SND_SOC_DAPM_AIF_OUT("ADC3_OUT", "PDM Capture",
 		0, SND_SOC_NOPM, 0, 0),
 
-	SND_SOC_DAPM_HP("HPH PA GPIO", msm_anlg_cdc_codec_enable_hph_pa_gpio),
+	SND_SOC_DAPM_HP("HPH PA GPIO OUT", msm_anlg_cdc_codec_enable_hph_pa_gpio),
 	SND_SOC_DAPM_SWITCH("HPH PA GPIO", SND_SOC_NOPM, 0, 0, &hph_pa_gpio_switch),
-	SND_SOC_DAPM_SPK("SPK PA GPIO", msm_anlg_cdc_codec_enable_spk_pa_gpio),
+	SND_SOC_DAPM_SPK("SPK PA GPIO OUT", msm_anlg_cdc_codec_enable_spk_pa_gpio),
 	SND_SOC_DAPM_SWITCH("SPK PA GPIO", SND_SOC_NOPM, 0, 0, &spk_pa_gpio_switch),
 
 #if IS_ENABLED(CONFIG_SND_SOC_AW87319_MI8937)
