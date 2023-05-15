@@ -1912,72 +1912,6 @@ static int msm_anlg_cdc_ext_spk_boost_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int msm_anlg_cdc_hph_pa_gpio_get(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
-	struct sdm660_cdc_priv *sdm660_cdc =
-					snd_soc_codec_get_drvdata(codec);
-
-	if (!sdm660_cdc->codec_hph_pa_gpio_get_cb)
-		return -ENODEV;
-
-	ucontrol->value.integer.value[0] = !!sdm660_cdc->codec_hph_pa_gpio_get_cb(codec);
-
-	return 0;
-}
-
-static int msm_anlg_cdc_hph_pa_gpio_set(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
-	struct sdm660_cdc_priv *sdm660_cdc =
-					snd_soc_codec_get_drvdata(codec);
-
-	dev_dbg(codec->dev, "%s: ucontrol->value.integer.value[0] = %ld\n",
-		__func__, ucontrol->value.integer.value[0]);
-
-	if (!sdm660_cdc->codec_hph_pa_gpio_set_cb)
-		return -ENODEV;
-
-	sdm660_cdc->codec_hph_pa_gpio_set_cb(codec, !!ucontrol->value.integer.value[0]);
-
-	return 0;
-}
-
-static int msm_anlg_cdc_spk_pa_gpio_get(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
-	struct sdm660_cdc_priv *sdm660_cdc =
-					snd_soc_codec_get_drvdata(codec);
-
-	if (!sdm660_cdc->codec_spk_pa_gpio_get_cb)
-		return -ENODEV;
-
-	ucontrol->value.integer.value[0] = !!sdm660_cdc->codec_spk_pa_gpio_get_cb(codec);
-
-	return 0;
-}
-
-static int msm_anlg_cdc_spk_pa_gpio_set(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
-	struct sdm660_cdc_priv *sdm660_cdc =
-					snd_soc_codec_get_drvdata(codec);
-
-	dev_dbg(codec->dev, "%s: ucontrol->value.integer.value[0] = %ld\n",
-		__func__, ucontrol->value.integer.value[0]);
-
-	if (!sdm660_cdc->codec_spk_pa_gpio_set_cb)
-		return -ENODEV;
-
-	sdm660_cdc->codec_spk_pa_gpio_set_cb(codec, !!ucontrol->value.integer.value[0]);
-
-	return 0;
-}
-
 static const char * const msm_anlg_cdc_ear_pa_boost_ctrl_text[] = {
 		"DISABLE", "ENABLE"};
 static const struct soc_enum msm_anlg_cdc_ear_pa_boost_ctl_enum[] = {
@@ -2015,18 +1949,6 @@ static const struct soc_enum msm_anlg_cdc_hph_mode_ctl_enum[] = {
 			msm_anlg_cdc_hph_mode_ctrl_text),
 };
 
-static const char * const msm_anlg_cdc_hph_pa_gpio_ctrl_text[] = {
-		"DISABLE", "ENABLE"};
-static const struct soc_enum msm_anlg_cdc_hph_pa_gpio_ctl_enum[] = {
-		SOC_ENUM_SINGLE_EXT(2, msm_anlg_cdc_hph_pa_gpio_ctrl_text),
-};
-
-static const char * const msm_anlg_cdc_spk_pa_gpio_ctrl_text[] = {
-		"DISABLE", "ENABLE"};
-static const struct soc_enum msm_anlg_cdc_spk_pa_gpio_ctl_enum[] = {
-		SOC_ENUM_SINGLE_EXT(2, msm_anlg_cdc_spk_pa_gpio_ctrl_text),
-};
-
 /*cut of frequency for high pass filter*/
 static const char * const cf_text[] = {
 	"MIN_3DB_4Hz", "MIN_3DB_75Hz", "MIN_3DB_150Hz"
@@ -2052,12 +1974,6 @@ static const struct snd_kcontrol_new msm_anlg_cdc_snd_controls[] = {
 
 	SOC_ENUM_EXT("Ext Spk Boost", msm_anlg_cdc_ext_spk_boost_ctl_enum[0],
 		msm_anlg_cdc_ext_spk_boost_get, msm_anlg_cdc_ext_spk_boost_set),
-
-	SOC_ENUM_EXT("HPH PA GPIO", msm_anlg_cdc_hph_pa_gpio_ctl_enum[0],
-		msm_anlg_cdc_hph_pa_gpio_get, msm_anlg_cdc_hph_pa_gpio_set),
-
-	SOC_ENUM_EXT("SPK PA GPIO", msm_anlg_cdc_spk_pa_gpio_ctl_enum[0],
-		msm_anlg_cdc_spk_pa_gpio_get, msm_anlg_cdc_spk_pa_gpio_set),
 
 	SOC_SINGLE_TLV("ADC1 Volume", MSM89XX_PMIC_ANALOG_TX_1_EN, 3,
 					8, 0, analog_gain),
@@ -2134,6 +2050,11 @@ static const char * const rdac2_mux_text[] = {
 };
 
 static const struct snd_kcontrol_new adc1_switch =
+	SOC_DAPM_SINGLE("Switch", SND_SOC_NOPM, 0, 1, 0);
+
+static const struct snd_kcontrol_new hph_pa_gpio_switch =
+	SOC_DAPM_SINGLE("Switch", SND_SOC_NOPM, 0, 1, 0);
+static const struct snd_kcontrol_new spk_pa_gpio_switch =
 	SOC_DAPM_SINGLE("Switch", SND_SOC_NOPM, 0, 1, 0);
 
 #if IS_ENABLED(CONFIG_SND_SOC_AW87319_MI8937)
@@ -3230,6 +3151,9 @@ static const struct snd_soc_dapm_route audio_map[] = {
 	{"MIC BIAS External2", NULL, "MICBIAS_REGULATOR"},
 
 	/* Others */
+	{"HPH PA GPIO", NULL, "HPH PA GPIO Switch"},
+	{"SPK PA GPIO", NULL, "SPK PA GPIO Switch"},
+
 #if IS_ENABLED(CONFIG_SND_SOC_AW87319_MI8937)
 	{"MI8937 AW87319 PA SPK", NULL, "MI8937 AW87319 PA SPK Switch"},
 #endif
@@ -3440,6 +3364,62 @@ static int msm_anlg_cdc_codec_enable_spk_ext_pa(struct snd_soc_dapm_widget *w,
 			sdm660_cdc->codec_spk_ext_pa_cb(codec, 0);
 		break;
 	}
+	return 0;
+}
+
+static int msm_anlg_cdc_codec_enable_hph_pa_gpio(struct snd_soc_dapm_widget *w,
+						struct snd_kcontrol *kcontrol,
+						int event)
+{
+	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
+	struct sdm660_cdc_priv *sdm660_cdc =
+					snd_soc_codec_get_drvdata(codec);
+
+	dev_dbg(codec->dev, "%s: %s event = %d\n", __func__, w->name, event);
+	if (!sdm660_cdc->codec_hph_pa_gpio_get_cb)
+		return -ENODEV;
+
+	switch (event) {
+	case SND_SOC_DAPM_POST_PMU:
+		dev_dbg(codec->dev,
+			"%s: Enable HPH PA GPIO\n", __func__);
+		sdm660_cdc->codec_hph_pa_gpio_set_cb(codec, 1);
+		break;
+	case SND_SOC_DAPM_PRE_PMD:
+		dev_dbg(codec->dev,
+			"%s: Disable HPH PA GPIO\n", __func__);
+		sdm660_cdc->codec_hph_pa_gpio_set_cb(codec, 1);
+		break;
+	}
+
+	return 0;
+}
+
+static int msm_anlg_cdc_codec_enable_spk_pa_gpio(struct snd_soc_dapm_widget *w,
+						struct snd_kcontrol *kcontrol,
+						int event)
+{
+	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
+	struct sdm660_cdc_priv *sdm660_cdc =
+					snd_soc_codec_get_drvdata(codec);
+
+	dev_dbg(codec->dev, "%s: %s event = %d\n", __func__, w->name, event);
+	if (!sdm660_cdc->codec_spk_pa_gpio_get_cb)
+		return -ENODEV;
+
+	switch (event) {
+	case SND_SOC_DAPM_POST_PMU:
+		dev_dbg(codec->dev,
+			"%s: Enable SPK PA GPIO\n", __func__);
+		sdm660_cdc->codec_spk_pa_gpio_set_cb(codec, 1);
+		break;
+	case SND_SOC_DAPM_PRE_PMD:
+		dev_dbg(codec->dev,
+			"%s: Disable SPK PA GPIO\n", __func__);
+		sdm660_cdc->codec_spk_pa_gpio_set_cb(codec, 1);
+		break;
+	}
+
 	return 0;
 }
 
@@ -3787,6 +3767,11 @@ static const struct snd_soc_dapm_widget msm_anlg_cdc_dapm_widgets[] = {
 		0, SND_SOC_NOPM, 0, 0),
 	SND_SOC_DAPM_AIF_OUT("ADC3_OUT", "PDM Capture",
 		0, SND_SOC_NOPM, 0, 0),
+
+	SND_SOC_DAPM_HP("HPH PA GPIO", msm_anlg_cdc_codec_enable_hph_pa_gpio),
+	SND_SOC_DAPM_SWITCH("HPH PA GPIO", SND_SOC_NOPM, 0, 0, &hph_pa_gpio_switch),
+	SND_SOC_DAPM_SPK("SPK PA GPIO", msm_anlg_cdc_codec_enable_spk_pa_gpio),
+	SND_SOC_DAPM_SWITCH("SPK PA GPIO", SND_SOC_NOPM, 0, 0, &spk_pa_gpio_switch),
 
 #if IS_ENABLED(CONFIG_SND_SOC_AW87319_MI8937)
 	SND_SOC_DAPM_SPK("MI8937 AW87319 PA SPK", msm_anlg_cdc_codec_enable_mi8937_aw87319_pa_spk),
