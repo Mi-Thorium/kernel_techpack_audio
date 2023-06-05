@@ -5068,6 +5068,10 @@ union afe_port_config {
 	struct afe_param_id_cdc_dma_cfg_t         cdc_dma;
 } __packed;
 
+struct afe_audioif_config_command_no_payload {
+	struct apr_hdr			hdr;
+	struct afe_port_cmd_set_param_v2 param;
+} __packed;
 
 /*
  * AFE event registration related APIs and corresponding payloads

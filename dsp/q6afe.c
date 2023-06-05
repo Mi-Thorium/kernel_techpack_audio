@@ -2089,11 +2089,68 @@ done:
 	return ret;
 }
 
+static int afe_send_cal_block_legacy(u16 port_id, struct cal_block_data *cal_block)
+{
+	int						result = 0;
+	int						index = 0;
+	struct afe_audioif_config_command_no_payload	afe_cal;
+
+	if (!cal_block) {
+		pr_debug("%s: No AFE cal to send!\n", __func__);
+		result = -EINVAL;
+		goto done;
+	}
+	if (cal_block->cal_data.size <= 0) {
+		pr_debug("%s: AFE cal has invalid size!\n", __func__);
+		result = -EINVAL;
+		goto done;
+	}
+
+	index = q6audio_get_port_index(port_id);
+	if (index < 0 || index >= AFE_MAX_PORTS) {
+		pr_err("%s: AFE port index[%d] invalid!\n",
+				__func__, index);
+		result = -EINVAL;
+		goto done;
+	}
+
+	afe_cal.hdr.hdr_field = APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD,
+				APR_HDR_LEN(APR_HDR_SIZE), APR_PKT_VER);
+	afe_cal.hdr.pkt_size = sizeof(afe_cal);
+	afe_cal.hdr.src_port = 0;
+	afe_cal.hdr.dest_port = 0;
+	afe_cal.hdr.token = index;
+	afe_cal.hdr.opcode = AFE_PORT_CMD_SET_PARAM_V2;
+	afe_cal.param.port_id = port_id;
+	afe_cal.param.payload_size = cal_block->cal_data.size;
+/*
+	afe_cal.param.payload_address_lsw =
+		lower_32_bits(cal_block->cal_data.paddr);
+	afe_cal.param.payload_address_msw =
+		msm_audio_populate_upper_32_bits(cal_block->cal_data.paddr);
+	afe_cal.param.mem_map_handle = cal_block->map_data.q6map_handle;
+*/
+
+	pr_debug("%s: AFE cal sent for device port = 0x%x, cal size = %zd, cal addr = 0x%pK\n",
+		__func__, port_id,
+		cal_block->cal_data.size, &cal_block->cal_data.paddr);
+
+	result = afe_apr_send_pkt(&afe_cal, &this_afe.wait[index]);
+	if (result)
+		pr_err("%s: AFE cal for port 0x%x failed %d\n",
+		       __func__, port_id, result);
+
+done:
+	return result;
+}
+
 static int afe_send_cal_block(u16 port_id, struct cal_block_data *cal_block)
 {
 	struct mem_mapping_hdr mem_hdr;
 	int payload_size = 0;
 	int result = 0;
+
+	return afe_send_cal_block_legacy(port_id, cal_block);
 
 	memset(&mem_hdr, 0, sizeof(mem_hdr));
 
