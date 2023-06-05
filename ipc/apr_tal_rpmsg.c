@@ -126,8 +126,8 @@ struct apr_svc_ch_dev *apr_tal_open(uint32_t clnt, uint32_t dest, uint32_t dl,
 	int rc = 0;
 	struct apr_svc_ch_dev *apr_ch = NULL;
 
-	if ((clnt != APR_CLIENT_AUDIO) || (dest >= APR_DEST_MAX) ||
-	    (dl != APR_DL_SMD)) {
+	if ((clnt >= APR_CLIENT_MAX) || (dest >= APR_DEST_MAX) ||
+						(dl >= APR_DL_MAX)) {
 		pr_err("%s: Invalid params, clnt:%d, dest:%d, dl:%d\n",
 		       __func__, clnt, dest, dl);
 		return NULL;
@@ -208,6 +208,7 @@ static int apr_tal_rpmsg_probe(struct rpmsg_device *rpdev)
 {
 	struct apr_svc_ch_dev *apr_ch = NULL;
 	int ret = 0;
+	int clnt;
 	const char* dest;
 
 	ret = of_property_read_string(rpdev->dev.parent->of_node,
@@ -218,7 +219,8 @@ static int apr_tal_rpmsg_probe(struct rpmsg_device *rpdev)
 		return -EINVAL;
 	}
 
-	if (!strcmp(rpdev->id.name, "apr_audio_svc")) {
+	if (!strcmp(rpdev->id.name, "apr_audio_svc") ||
+			!strcmp(rpdev->id.name, "apr_voice_svc")) {
 		dev_info(&rpdev->dev, "%s: Channel[%s] state[Up]\n",
 			 __func__, rpdev->id.name);
 	} else {
@@ -234,8 +236,12 @@ static int apr_tal_rpmsg_probe(struct rpmsg_device *rpdev)
 		dev_set_drvdata(&rpdev->dev, apr_ch);
 		wake_up(&apr_ch->wait);
 	} else if(strstr(dest, "mpss")) {
+		if (!strcmp(rpdev->id.name, "apr_audio_svc"))
+			clnt = APR_CLIENT_AUDIO;
+		else
+			clnt = APR_CLIENT_VOICE;
 		apr_ch =
-		&apr_svc_ch[APR_DL_SMD][APR_DEST_MODEM][APR_CLIENT_AUDIO];
+		&apr_svc_ch[APR_DL_SMD][APR_DEST_MODEM][clnt];
 		apr_ch->handle = rpdev;
 		apr_ch->channel_state = APR_CH_CONNECTED;
 		dev_set_drvdata(&rpdev->dev, apr_ch);
@@ -265,18 +271,33 @@ static void apr_tal_rpmsg_remove(struct rpmsg_device *rpdev)
 	dev_set_drvdata(&rpdev->dev, NULL);
 }
 
-static const struct rpmsg_device_id apr_tal_rpmsg_match[] = {
+static const struct rpmsg_device_id apr_tal_rpmsg_audio_match[] = {
 	{ "apr_audio_svc" },
 	{}
 };
 
-static struct rpmsg_driver apr_tal_rpmsg_driver = {
+static struct rpmsg_driver apr_tal_rpmsg_audio_driver = {
 	.probe = apr_tal_rpmsg_probe,
 	.remove = apr_tal_rpmsg_remove,
 	.callback = apr_tal_rpmsg_callback,
-	.id_table = apr_tal_rpmsg_match,
+	.id_table = apr_tal_rpmsg_audio_match,
 	.drv = {
-		.name = "apr_tal_rpmsg",
+		.name = "apr_tal_rpmsg_audio",
+	},
+};
+
+static const struct rpmsg_device_id apr_tal_rpmsg_voice_match[] = {
+	{ "apr_voice_svc" },
+	{}
+};
+
+static struct rpmsg_driver apr_tal_rpmsg_voice_driver = {
+	.probe = apr_tal_rpmsg_probe,
+	.remove = apr_tal_rpmsg_remove,
+	.callback = apr_tal_rpmsg_callback,
+	.id_table = apr_tal_rpmsg_voice_match,
+	.drv = {
+		.name = "apr_tal_rpmsg_voice",
 	},
 };
 
@@ -301,7 +322,8 @@ int apr_tal_init(void)
 			}
 		}
 	}
-	ret = register_rpmsg_driver(&apr_tal_rpmsg_driver);
+	ret = register_rpmsg_driver(&apr_tal_rpmsg_audio_driver);
+	ret = register_rpmsg_driver(&apr_tal_rpmsg_voice_driver);
 	return ret;
 }
 EXPORT_SYMBOL(apr_tal_init);
@@ -311,7 +333,8 @@ EXPORT_SYMBOL(apr_tal_init);
  */
 void apr_tal_exit(void)
 {
-	unregister_rpmsg_driver(&apr_tal_rpmsg_driver);
+	unregister_rpmsg_driver(&apr_tal_rpmsg_voice_driver);
+	unregister_rpmsg_driver(&apr_tal_rpmsg_audio_driver);
 }
 EXPORT_SYMBOL(apr_tal_exit);
 
