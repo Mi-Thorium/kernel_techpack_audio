@@ -7723,7 +7723,6 @@ static int32_t qdsp_cvs_callback(struct apr_client_data *data, void *priv)
 							data->payload_size);
 				break;
 			case VSS_ICOMMON_CMD_GET_PARAM_V2:
-			case VSS_ICOMMON_CMD_GET_PARAM_V3:
 				pr_debug("%s: VSS_ICOMMON_CMD_GET_PARAM_V2\n",
 					 __func__);
 				/* Should only come here if there is an APR */
@@ -7862,8 +7861,7 @@ static int32_t qdsp_cvs_callback(struct apr_client_data *data, void *priv)
 		pr_debug("Recd VSS_ISTREAM_EVT_NOT_READY\n");
 	} else if (data->opcode == VSS_ISTREAM_EVT_READY) {
 		pr_debug("Recd VSS_ISTREAM_EVT_READY\n");
-	} else if (data->opcode == VSS_ICOMMON_RSP_GET_PARAM ||
-		   VSS_ICOMMON_RSP_GET_PARAM_V3) {
+	} else if (data->opcode == VSS_ICOMMON_RSP_GET_PARAM) {
 		pr_debug("%s: VSS_ICOMMON_RSP_GET_PARAM\n", __func__);
 		ptr = data->payload;
 		if (ptr[0] != 0) {
@@ -8020,13 +8018,12 @@ static int32_t qdsp_cvp_callback(struct apr_client_data *data, void *priv)
 						data->payload_size);
 					break;
 				default:
-					pr_debug("%s: invalid token for command VSS_ICOMMON_CMD_SET_PARAM: %d\n",
+					pr_debug("%s: invalid token for command VSS_ICOMMON_CMD_SET_PARAM_V2: %d\n",
 						__func__, data->token);
 					break;
 				}
 				break;
 			case VSS_ICOMMON_CMD_GET_PARAM_V2:
-			case VSS_ICOMMON_CMD_GET_PARAM_V3:
 				pr_debug("%s: VSS_ICOMMON_CMD_GET_PARAM_V2\n",
 					 __func__);
 				/* Should only come here if there is an APR */
@@ -8093,8 +8090,7 @@ static int32_t qdsp_cvp_callback(struct apr_client_data *data, void *priv)
 				break;
 			}
 		}
-	} else if (data->opcode == VSS_ICOMMON_RSP_GET_PARAM ||
-		   VSS_ICOMMON_RSP_GET_PARAM_V3) {
+	} else if (data->opcode == VSS_ICOMMON_RSP_GET_PARAM) {
 		pr_debug("%s: VSS_ICOMMON_RSP_GET_PARAM\n", __func__);
 		ptr = data->payload;
 		if (ptr[0] != 0) {
