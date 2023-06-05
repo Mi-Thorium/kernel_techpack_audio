@@ -518,22 +518,6 @@ done:
 	return ret;
 }
 
-static int msm_voice_mbd_get(struct snd_kcontrol *kcontrol,
-			      struct snd_ctl_elem_value *ucontrol)
-{
-	ucontrol->value.integer.value[0] = voc_get_mbd_enable();
-	return 0;
-}
-
-static int msm_voice_mbd_put(struct snd_kcontrol *kcontrol,
-			      struct snd_ctl_elem_value *ucontrol)
-{
-	bool enable = ucontrol->value.integer.value[0];
-
-	voc_set_mbd_enable(enable);
-
-	return 0;
-}
 
 
 static const char * const tty_mode[] = {"OFF", "HCO", "VCO", "FULL"};
@@ -711,8 +695,6 @@ static struct snd_kcontrol_new msm_voice_controls[] = {
 	},
 	SOC_SINGLE_MULTI_EXT("Voice Sidetone Enable", SND_SOC_NOPM, 0, 1, 0, 1,
 			     msm_voice_sidetone_get, msm_voice_sidetone_put),
-	SOC_SINGLE_BOOL_EXT("Voice Mic Break Enable", 0, msm_voice_mbd_get,
-				msm_voice_mbd_put),
 };
 
 static struct snd_kcontrol_new msm_voice_rec_config_controls[] = {
