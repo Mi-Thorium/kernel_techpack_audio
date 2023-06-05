@@ -63,7 +63,6 @@ struct cvd_version_table cvd_version_table_mapping[CVD_INT_VERSION_MAX] = {
 		{CVD_VERSION_2_1, CVD_INT_VERSION_2_1},
 		{CVD_VERSION_2_2, CVD_INT_VERSION_2_2},
 		{CVD_VERSION_2_3, CVD_INT_VERSION_2_3},
-		{CVD_VERSION_2_4, CVD_INT_VERSION_2_4},
 };
 
 extern bool msm_enable_legacy_adsp_hacks;
