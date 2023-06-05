@@ -31,7 +31,7 @@ EXPORT_SYMBOL(q6common_update_instance_id_support);
  */
 bool q6common_is_instance_id_supported(void)
 {
-	return common.instance_id_supported;
+	return false;
 }
 EXPORT_SYMBOL(q6common_is_instance_id_supported);
 
