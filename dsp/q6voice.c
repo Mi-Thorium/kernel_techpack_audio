@@ -4722,12 +4722,142 @@ done:
 	return ret;
 }
 
+static int voice_send_cvp_media_format_cmd_legacy(struct voice_data *v,
+					   uint32_t param_type)
+{
+	int ret = 0;
+	struct cvp_set_media_format_cmd cvp_set_media_format_cmd;
+	void *apr_cvp;
+	u16 cvp_handle;
+	struct vss_icommon_param_data_t *media_fmt_param_data =
+		&cvp_set_media_format_cmd.cvp_set_media_param_v2.param_data;
+	struct vss_param_endpoint_media_format_info *media_fmt_info =
+		&media_fmt_param_data->media_format_info;
+
+	if (v == NULL) {
+		pr_err("%s: v is NULL\n", __func__);
+		ret = -EINVAL;
+		goto done;
+	}
+
+	apr_cvp = common.apr_q6_cvp;
+	if (!apr_cvp) {
+		pr_err("%s: apr_cvp is NULL.\n", __func__);
+		ret = -EINVAL;
+		goto done;
+	}
+
+	cvp_handle = voice_get_cvp_handle(v);
+	memset(&cvp_set_media_format_cmd, 0, sizeof(cvp_set_media_format_cmd));
+
+	/* Fill header data */
+	cvp_set_media_format_cmd.hdr.hdr_field =
+		APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD, APR_HDR_LEN(APR_HDR_SIZE),
+			      APR_PKT_VER);
+	cvp_set_media_format_cmd.hdr.pkt_size =
+		APR_PKT_SIZE(APR_HDR_SIZE,
+			     sizeof(cvp_set_media_format_cmd) - APR_HDR_SIZE);
+	cvp_set_media_format_cmd.hdr.src_svc = 0;
+	cvp_set_media_format_cmd.hdr.src_domain = APR_DOMAIN_APPS;
+	cvp_set_media_format_cmd.hdr.src_port =
+		voice_get_idx_for_session(v->session_id);
+	cvp_set_media_format_cmd.hdr.dest_svc = 0;
+	cvp_set_media_format_cmd.hdr.dest_domain = APR_DOMAIN_ADSP;
+	cvp_set_media_format_cmd.hdr.dest_port = cvp_handle;
+	cvp_set_media_format_cmd.hdr.token = VOC_SET_MEDIA_FORMAT_PARAM_TOKEN;
+	cvp_set_media_format_cmd.hdr.opcode = VSS_ICOMMON_CMD_SET_PARAM_V2;
+
+	/* Fill param data */
+	cvp_set_media_format_cmd.cvp_set_media_param_v2.mem_size =
+		sizeof(struct vss_icommon_param_data_t);
+	media_fmt_param_data->module_id = VSS_MODULE_CVD_GENERIC;
+	media_fmt_param_data->param_size =
+		sizeof(struct vss_param_endpoint_media_format_info);
+
+	/* Fill device specific data */
+	switch (param_type) {
+	case RX_PATH:
+		media_fmt_param_data->param_id =
+			VSS_PARAM_RX_PORT_ENDPOINT_MEDIA_INFO;
+		media_fmt_info->port_id = v->dev_rx.port_id;
+		media_fmt_info->num_channels = v->dev_rx.no_of_channels;
+		media_fmt_info->bits_per_sample = v->dev_rx.bits_per_sample;
+		media_fmt_info->sample_rate = v->dev_rx.sample_rate;
+		memcpy(&media_fmt_info->channel_mapping,
+		       &v->dev_rx.channel_mapping, VSS_CHANNEL_MAPPING_SIZE);
+		break;
+
+	case TX_PATH:
+		media_fmt_param_data->param_id =
+			VSS_PARAM_TX_PORT_ENDPOINT_MEDIA_INFO;
+		media_fmt_info->port_id = v->dev_tx.port_id;
+		media_fmt_info->num_channels = v->dev_tx.no_of_channels;
+		media_fmt_info->bits_per_sample = v->dev_tx.bits_per_sample;
+		media_fmt_info->sample_rate = v->dev_tx.sample_rate;
+		memcpy(&media_fmt_info->channel_mapping,
+		       &v->dev_tx.channel_mapping, VSS_CHANNEL_MAPPING_SIZE);
+		break;
+
+	case EC_REF_PATH:
+		media_fmt_param_data->param_id =
+			VSS_PARAM_EC_REF_PORT_ENDPOINT_MEDIA_INFO;
+		media_fmt_info->port_id = common.ec_media_fmt_info.port_id;
+		media_fmt_info->num_channels =
+			common.ec_media_fmt_info.num_channels;
+		media_fmt_info->bits_per_sample =
+			common.ec_media_fmt_info.bits_per_sample;
+		media_fmt_info->sample_rate =
+			common.ec_media_fmt_info.sample_rate;
+		memcpy(&media_fmt_info->channel_mapping,
+		       &common.ec_media_fmt_info.channel_mapping,
+		       VSS_CHANNEL_MAPPING_SIZE);
+		break;
+
+	default:
+		pr_err("%s: Invalid param type %d\n", __func__, param_type);
+		ret = -EINVAL;
+		goto done;
+	}
+
+	/* Send command */
+	v->cvp_state = CMD_STATUS_FAIL;
+	v->async_err = 0;
+	ret = apr_send_pkt(apr_cvp, (uint32_t *) &cvp_set_media_format_cmd);
+	if (ret < 0) {
+		pr_err("%s: Fail in sending VSS_ICOMMON_CMD_SET_PARAM_V2\n",
+		       __func__);
+		ret = -EINVAL;
+		goto done;
+	}
+
+	ret = wait_event_timeout(v->cvp_wait,
+				 (v->cvp_state == CMD_STATUS_SUCCESS),
+				 msecs_to_jiffies(TIMEOUT_MS));
+	if (!ret) {
+		pr_err("%s: wait_event timeout\n", __func__);
+		ret = -EINVAL;
+		goto done;
+	}
+
+	if (v->async_err > 0) {
+		pr_err("%s: DSP returned error[%s] handle = %d\n", __func__,
+		       adsp_err_get_err_str(v->async_err), cvp_handle);
+		ret = adsp_err_get_lnx_err_code(v->async_err);
+		goto done;
+	}
+
+done:
+	return ret;
+}
+
 static int voice_send_cvp_media_format_cmd(struct voice_data *v,
 					   uint32_t param_type)
 {
 	struct vss_param_endpoint_media_format_info media_fmt_info;
 	struct param_hdr_v3 param_hdr;
 	int ret = 0;
+
+	return voice_send_cvp_media_format_cmd_legacy(v, param_type);
 
 	memset(&media_fmt_info, 0, sizeof(media_fmt_info));
 	memset(&param_hdr, 0, sizeof(param_hdr));

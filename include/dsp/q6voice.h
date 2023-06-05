@@ -255,6 +255,27 @@ struct vss_param_mfc_config_info_t {
 	uint16_t channel_type[VSS_NUM_CHANNELS_MAX];
 } __packed;
 
+struct vss_icommon_param_data_t {
+	/* Valid ID of the module. */
+	uint32_t module_id;
+	/* Valid ID of the parameter. */
+	uint32_t param_id;
+	/*
+	 * Data size of the structure relating to the param_id/module_id
+	 * combination in uint8_t bytes.
+	 */
+	uint16_t param_size;
+	/* This field must be set to zero. */
+	uint16_t reserved;
+	/*
+	 * Parameter data payload when inband. Should have size param_size.
+	 * Bit size of payload must be a multiple of 4.
+	 */
+	union {
+		struct vss_param_endpoint_media_format_info media_format_info;
+	};
+} __packed;
+
 struct vss_icommon_param_data_channel_info_v2_t {
 	/* Valid ID of the module. */
 	uint32_t module_id;
@@ -418,6 +439,33 @@ struct vss_icommon_cmd_set_param_mfc_config_v2_t {
 	uint32_t mem_size;
 
 	struct vss_icommon_param_data_mfc_config_v2_t param_data;
+} __packed;
+
+/* Payload structure for the VSS_ICOMMON_CMD_SET_PARAM_V2 command. */
+struct vss_icommon_cmd_set_param_v2_t {
+	/*
+	 * Pointer to the unique identifier for an address (physical/virtual).
+	 *
+	 * If the parameter data payload is within the message payload
+	 * (in-band), set this field to 0. The parameter data begins at the
+	 * specified data payload address.
+	 *
+	 * If the parameter data is out-of-band, this field is the handle to
+	 * the physical address in the shared memory that holds the parameter
+	 * data.
+	 */
+	uint32_t mem_handle;
+	/*
+	 * Location of the parameter data payload.
+	 *
+	 * The payload is an array of vss_icommon_param_data_t. If the
+	 * mem_handle is 0, this field is ignored.
+	 */
+	uint64_t mem_address;
+	/* Size of the parameter data payload in bytes. */
+	uint32_t mem_size;
+	/* Parameter data payload when the data is inband. */
+	struct vss_icommon_param_data_t param_data;
 } __packed;
 
 struct vss_icommon_mem_mapping_hdr {
@@ -1697,6 +1745,11 @@ struct cvp_set_device_cmd {
 struct cvp_set_dev_channels_cmd {
 	struct apr_hdr hdr;
 	struct vss_ivocproc_cmd_topology_set_dev_channels_t cvp_set_channels;
+} __packed;
+
+struct cvp_set_media_format_cmd {
+	struct apr_hdr hdr;
+	struct vss_icommon_cmd_set_param_v2_t cvp_set_media_param_v2;
 } __packed;
 
 struct cvp_set_channel_info_cmd_v2 {
