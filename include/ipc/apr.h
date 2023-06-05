@@ -178,7 +178,7 @@ void q6audio_dsp_not_responding(void);
 void apr_reset(void *handle);
 enum apr_subsys_state apr_get_subsys_state(void);
 enum apr_subsys_state apr_get_modem_state(void);
-void apr_set_modem_state(enum apr_subsys_state state);
+int apr_set_modem_state(enum apr_subsys_state state);
 enum apr_subsys_state apr_get_q6_state(void);
 int apr_set_q6_state(enum apr_subsys_state state);
 void apr_set_subsys_state(void);

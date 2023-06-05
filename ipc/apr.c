@@ -233,29 +233,29 @@ EXPORT_SYMBOL(apr_get_modem_state);
  * @state: State to update modem load status
  *
  */
-void apr_set_modem_state(enum apr_subsys_state state)
+int apr_set_modem_state(enum apr_subsys_state state)
 {
+	pr_debug("%s: setting modem state %d\n", __func__, state);
+	if (state < APR_SUBSYS_DOWN || state > APR_SUBSYS_LOADED)
+		return -EINVAL;
 	atomic_set(&q6.modem_state, state);
+	return 0;
 }
 EXPORT_SYMBOL(apr_set_modem_state);
 
-enum apr_subsys_state apr_cmpxchg_modem_state(enum apr_subsys_state prev,
-					      enum apr_subsys_state new)
-{
-	return atomic_cmpxchg(&q6.modem_state, prev, new);
-}
-
 static void apr_modem_down(unsigned long opcode)
 {
+	pr_info("%s: Modem is Down\n", __func__);
+	snd_event_notify(apr_priv->dev, SND_EVENT_DOWN);
 	apr_set_modem_state(APR_SUBSYS_DOWN);
 	dispatch_event(opcode, APR_DEST_MODEM);
 }
 
 static void apr_modem_up(void)
 {
-	if (apr_cmpxchg_modem_state(APR_SUBSYS_DOWN, APR_SUBSYS_UP) ==
-							APR_SUBSYS_DOWN)
-		wake_up(&modem_wait);
+	pr_info("%s: Modem is Up\n", __func__);
+	apr_set_modem_state(APR_SUBSYS_LOADED);
+	snd_event_notify(apr_priv->dev, SND_EVENT_UP);
 	is_modem_up = 1;
 }
 
@@ -1183,26 +1183,10 @@ static int apr_probe(struct platform_device *pdev)
 	spin_lock(&apr_priv->apr_lock);
 	apr_priv->is_initial_boot = true;
 	spin_unlock(&apr_priv->apr_lock);
-	ret = of_property_read_string(pdev->dev.of_node,
-				      "qcom,subsys-name",
-				      (const char **)(&subsys_name));
-	if (ret) {
-		pr_err("%s: missing subsys-name entry in dt node\n", __func__);
-		return -EINVAL;
-	}
-
-	if (!strcmp(subsys_name, "apr_adsp")) {
-		subsys_notif_register("apr_adsp",
-				       AUDIO_NOTIFIER_ADSP_DOMAIN,
-				       &adsp_service_nb);
-	} else if (!strcmp(subsys_name, "apr_modem")) {
-		subsys_notif_register("apr_modem",
-				       AUDIO_NOTIFIER_MODEM_DOMAIN,
-				       &modem_service_nb);
-	} else {
-		pr_err("%s: invalid subsys-name %s\n", __func__, subsys_name);
-		return -EINVAL;
-	}
+	subsys_notif_register("apr_adsp", AUDIO_NOTIFIER_ADSP_DOMAIN,
+			      &adsp_service_nb);
+	subsys_notif_register("apr_modem", AUDIO_NOTIFIER_MODEM_DOMAIN,
+			      &modem_service_nb);
 
 	apr_tal_init();
 
