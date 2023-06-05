@@ -979,10 +979,7 @@ int adm_set_pp_params(int port_id, int copp_idx,
 		atomic_read(&this_adm.copp.id[port_idx][copp_idx]);
 	adm_set_params->apr_hdr.token = port_idx << 16 | copp_idx;
 
-	if (q6common_is_instance_id_supported())
-		adm_set_params->apr_hdr.opcode = ADM_CMD_SET_PP_PARAMS_V6;
-	else
-		adm_set_params->apr_hdr.opcode = ADM_CMD_SET_PP_PARAMS_V5;
+	adm_set_params->apr_hdr.opcode = ADM_CMD_SET_PP_PARAMS_V5;
 
 	adm_set_params->payload_size = param_size;
 
@@ -1100,10 +1097,7 @@ int adm_get_pp_params(int port_id, int copp_idx, uint32_t client_id,
 	adm_get_params.apr_hdr.token =
 		port_idx << 16 | client_id << 8 | copp_idx;
 
-	if (q6common_is_instance_id_supported())
-		adm_get_params.apr_hdr.opcode = ADM_CMD_GET_PP_PARAMS_V6;
-	else
-		adm_get_params.apr_hdr.opcode = ADM_CMD_GET_PP_PARAMS_V5;
+	adm_get_params.apr_hdr.opcode = ADM_CMD_GET_PP_PARAMS_V5;
 
 	ret = adm_apr_send_pkt((uint32_t *) &adm_get_params,
 			&this_adm.copp.wait[port_idx][copp_idx],
@@ -1594,8 +1588,7 @@ static int32_t adm_callback(struct apr_client_data *data, void *priv)
 				__func__, payload[0]);
 
 			if (!((client_id != ADM_CLIENT_ID_SOURCE_TRACKING) &&
-			     ((payload[0] == ADM_CMD_SET_PP_PARAMS_V5) ||
-			      (payload[0] == ADM_CMD_SET_PP_PARAMS_V6)))) {
+			      (payload[0] == ADM_CMD_SET_PP_PARAMS_V5))) {
 				if (data->payload_size <
 						(2 * sizeof(uint32_t))) {
 					pr_err("%s: Invalid payload size %d\n",
@@ -1610,7 +1603,6 @@ static int32_t adm_callback(struct apr_client_data *data, void *priv)
 			}
 			switch (payload[0]) {
 			case ADM_CMD_SET_PP_PARAMS_V5:
-			case ADM_CMD_SET_PP_PARAMS_V6:
 				pr_debug("%s: ADM_CMD_SET_PP_PARAMS\n",
 					 __func__);
 				if (client_id == ADM_CLIENT_ID_SOURCE_TRACKING)
@@ -1676,7 +1668,6 @@ static int32_t adm_callback(struct apr_client_data *data, void *priv)
 				}
 				break;
 			case ADM_CMD_GET_PP_PARAMS_V5:
-			case ADM_CMD_GET_PP_PARAMS_V6:
 				pr_debug("%s: ADM_CMD_GET_PP_PARAMS\n",
 					 __func__);
 				/* Should only come here if there is an APR */

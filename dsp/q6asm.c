@@ -2005,7 +2005,6 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 	if (data->opcode == APR_BASIC_RSP_RESULT) {
 		switch (payload[0]) {
 		case ASM_STREAM_CMD_SET_PP_PARAMS_V2:
-		case ASM_STREAM_CMD_SET_PP_PARAMS_V3:
 			if (rtac_make_asm_callback(ac->session, payload,
 					data->payload_size))
 				break;
@@ -2059,9 +2058,7 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 						if ((is_adsp_reg_event(payload[0]) >=
 						     0) ||
 						    (payload[0] ==
-						     ASM_STREAM_CMD_SET_PP_PARAMS_V2) ||
-						    (payload[0] ==
-						     ASM_STREAM_CMD_SET_PP_PARAMS_V3))
+						     ASM_STREAM_CMD_SET_PP_PARAMS_V2))
 							atomic_set(&ac->cmd_state_pp,
 								payload[1]);
 						else
@@ -2079,8 +2076,7 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 					__func__, data->payload_size);
 			}
 			if ((is_adsp_reg_event(payload[0]) >= 0) ||
-			    (payload[0] == ASM_STREAM_CMD_SET_PP_PARAMS_V2) ||
-			    (payload[0] == ASM_STREAM_CMD_SET_PP_PARAMS_V3)) {
+			    (payload[0] == ASM_STREAM_CMD_SET_PP_PARAMS_V2)) {
 				if (atomic_read(&ac->cmd_state_pp) &&
 					wakeup_flag) {
 					atomic_set(&ac->cmd_state_pp, 0);
@@ -2926,10 +2922,7 @@ int q6asm_set_pp_params(struct audio_client *ac,
 	q6asm_add_hdr_async(ac, &asm_set_param->apr_hdr, pkt_size, TRUE);
 
 	/* With pre-packed data, only the opcode differs from V2 and V3. */
-	if (q6common_is_instance_id_supported())
-		asm_set_param->apr_hdr.opcode = ASM_STREAM_CMD_SET_PP_PARAMS_V3;
-	else
-		asm_set_param->apr_hdr.opcode = ASM_STREAM_CMD_SET_PP_PARAMS_V2;
+	asm_set_param->apr_hdr.opcode = ASM_STREAM_CMD_SET_PP_PARAMS_V2;
 
 	asm_set_param->payload_size = param_size;
 
