@@ -337,15 +337,6 @@ static int32_t aprv2_core_fn_q(struct apr_client_data *data, void *priv)
 			q6core_lcl.avcs_fwk_ver_resp_received = 1;
 			wake_up(&q6core_lcl.avcs_fwk_ver_req_wait);
 			break;
-		case AVCS_CMD_LOAD_TOPO_MODULES:
-		case AVCS_CMD_UNLOAD_TOPO_MODULES:
-			pr_debug("%s: Cmd = %s status[%s]\n",
-				__func__,
-				(payload1[0] == AVCS_CMD_LOAD_TOPO_MODULES) ?
-				"AVCS_CMD_LOAD_TOPO_MODULES" :
-				"AVCS_CMD_UNLOAD_TOPO_MODULES",
-				adsp_err_get_err_str(payload1[1]));
-			break;
 		case AVCS_CMD_DESTROY_LPASS_NPA_CLIENT:
 		case AVCS_CMD_REQUEST_LPASS_NPA_RESOURCES:
 			pr_debug("%s: Cmd = AVCS_CMD_CREATE_LPASS_NPA_CLIENT/AVCS_CMD_DESTROY_LPASS_NPA_CLIENT status[%s]\n",
@@ -1123,53 +1114,6 @@ done:
 	return ret;
 }
 EXPORT_SYMBOL(q6core_avcs_load_unload_modules);
-
-int32_t q6core_load_unload_topo_modules(uint32_t topo_id,
-			bool preload_type)
-{
-	struct avcs_cmd_load_unload_topo_modules load_unload_topo_modules;
-	int ret = 0;
-
-	mutex_lock(&(q6core_lcl.cmd_lock));
-	ocm_core_open();
-	if (q6core_lcl.core_handle_q == NULL) {
-		pr_err("%s: apr registration for CORE failed\n", __func__);
-		ret  = -ENODEV;
-		goto done;
-	}
-
-	memset(&load_unload_topo_modules, 0, sizeof(load_unload_topo_modules));
-	load_unload_topo_modules.hdr.hdr_field =
-			APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD,
-			APR_HDR_LEN(APR_HDR_SIZE), APR_PKT_VER);
-	load_unload_topo_modules.hdr.pkt_size =
-			sizeof(struct avcs_cmd_load_unload_topo_modules);
-	load_unload_topo_modules.hdr.src_port = 0;
-	load_unload_topo_modules.hdr.dest_port = 0;
-	load_unload_topo_modules.hdr.token = 0;
-
-	if (preload_type == CORE_LOAD_TOPOLOGY)
-		load_unload_topo_modules.hdr.opcode =
-			AVCS_CMD_LOAD_TOPO_MODULES;
-	else
-		load_unload_topo_modules.hdr.opcode =
-			AVCS_CMD_UNLOAD_TOPO_MODULES;
-
-	load_unload_topo_modules.topology_id = topo_id;
-	ret = apr_send_pkt(q6core_lcl.core_handle_q,
-		(uint32_t *) &load_unload_topo_modules);
-	if (ret < 0) {
-		pr_err("%s: Load/unload topo modules failed for topology = %d ret = %d\n",
-			__func__, topo_id, ret);
-		ret = -EINVAL;
-	}
-
-done:
-	mutex_unlock(&(q6core_lcl.cmd_lock));
-
-	return ret;
-}
-EXPORT_SYMBOL(q6core_load_unload_topo_modules);
 
 /**
  * q6core_is_adsp_ready - check adsp ready status

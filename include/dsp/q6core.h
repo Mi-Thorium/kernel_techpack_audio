@@ -179,19 +179,6 @@ struct avcs_cmd_deregister_topologies {
 
 #define AVCS_MODE_DEREGISTER_ALL_CUSTOM_TOPOLOGIES	2
 
-#define AVCS_CMD_LOAD_TOPO_MODULES                 0x0001296C
-
-#define AVCS_CMD_UNLOAD_TOPO_MODULES               0x0001296D
-
-#define CORE_LOAD_TOPOLOGY	0
-
-#define CORE_UNLOAD_TOPOLOGY	1
-
-struct avcs_cmd_load_unload_topo_modules {
-	struct apr_hdr hdr;
-	uint32_t topology_id;
-} __packed;
-
 #define AVCS_LOAD_MODULES 1
 
 #define AVCS_UNLOAD_MODULES 0
@@ -418,9 +405,6 @@ int q6core_map_mdf_shared_memory(uint32_t map_handle, uint64_t *buf_add,
 
 int32_t core_set_license(uint32_t key, uint32_t module_id);
 int32_t core_get_license_status(uint32_t module_id);
-
-int32_t q6core_load_unload_topo_modules(uint32_t topology_id,
-			bool preload_type);
 
 int q6core_create_lpass_npa_client(uint32_t node_id, char *client_name,
 				   uint32_t *client_handle);
