@@ -2845,6 +2845,8 @@ static int voice_send_cvp_create_cmd(struct voice_data *v)
 		cvp_session_cmd.hdr.opcode =
 				VSS_IVOCPROC_CMD_CREATE_FULL_CONTROL_SESSION_V2;
 
+	pr_info("CVD INT version: %d\n", voice_get_cvd_int_version(common.cvd_version));
+
 	voc_get_tx_rx_topology(v,
 			&cvp_session_cmd.cvp_session.tx_topology_id,
 			&cvp_session_cmd.cvp_session.rx_topology_id);
@@ -4384,7 +4386,7 @@ static int voice_setup_vocproc(struct voice_data *v)
 		ret = -EINVAL;
 		goto fail;
 	}
-	pr_debug("%s: CVP Version %d\n", __func__, common.cvp_version);
+	pr_info("%s: CVP Version %d\n", __func__, common.cvp_version);
 
 	ret = voice_send_cvp_media_fmt_info_cmd(v);
 	if (ret < 0) {
