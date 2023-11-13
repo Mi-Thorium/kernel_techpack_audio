@@ -1220,7 +1220,9 @@ static int apr_remove(struct platform_device *pdev)
 {
 	snd_event_client_deregister(&pdev->dev);
 	apr_cleanup();
+#ifndef CONFIG_MSM_QDSP6_APRV2
 	apr_tal_exit();
+#endif
 	apr_priv = NULL;
 	return 0;
 }
