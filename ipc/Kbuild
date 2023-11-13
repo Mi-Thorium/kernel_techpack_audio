@@ -124,6 +124,11 @@ COMMON_DIR :=	include
 COMMON_INC :=	-I$(AUDIO_ROOT)/$(COMMON_DIR)
 
 ############ IPC ############
+ifdef CONFIG_MSM_QDSP6_APRV2
+APRV_GLINK += apr.o
+APRV_GLINK += apr_v2.o
+APRV_GLINK += apr_tal.o
+endif
 
 ifdef CONFIG_MSM_QDSP6_APRV2_RPMSG
 APRV_GLINK += apr.o
@@ -185,6 +190,7 @@ GCOV_PROFILE := y
 endif
 
 # Module information used by KBuild framework
+obj-$(CONFIG_MSM_QDSP6_APRV2) += apr_dlkm.o
 obj-$(CONFIG_MSM_QDSP6_APRV2_RPMSG) += apr_dlkm.o
 obj-$(CONFIG_MSM_QDSP6_APRV3_RPMSG) += apr_dlkm.o
 obj-$(CONFIG_MSM_QDSP6_APRV2_VM) += apr_dlkm.o
